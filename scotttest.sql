@@ -67,3 +67,51 @@ select empno,ename,mgr,
                        else to_char(mgr)
            end as CHG_MGR
 from emp;
+
+ --Q8-1  239p
+ select d.deptno,d.dname,e.empno,e.ename,e.sal
+ from emp e inner join dept d
+--using(deptno)
+--where e.sal > 2000;
+on e.deptno = d.deptno and e.sal>2000
+order by deptno asc;
+
+--Q8-2 239p
+select d.deptno,d.dname,trunc(avg(sal),0) AVG_SAL,max(sal) MAX_SAL,min(sal) MIN_SAL,count(*) CNT
+from emp e inner join dept d
+--using(deptno) 별칭 사용 시 적용이 제한된다.
+--group by d.deptno;
+on e.deptno = d.deptno --on사용
+group by d.deptno,dname;
+
+--Q8-3 239p
+select d.deptno,d.dname,e.empno,e.ename,e.job,e.sal
+from emp e right outer join dept d
+on e.deptno = d.deptno
+order by d.deptno,e.ename;
+
+--Q8-4 240p *****
+select d.deptno,d.dname, e.empno,e.ename, e.mgr,e.sal,
+            e.deptno as DEPTNO_1,
+            s.losal as LOSAL,
+            s.hisal as HISAL,
+            s.grade,m.empno as MGR_EMPNO,
+            m.ename as MGR_ENAME
+from emp e right outer join dept d
+on e.deptno = d.deptno
+        full outer join salgrade s
+on e.sal between s.losal and s.hisal
+        left outer join emp m
+on e.mgr = m.empno
+order by d.deptno,e.empno;
+
+
+
+
+
+
+
+
+
+
+
