@@ -45,12 +45,39 @@ select * from emp02;
 
 
 --제약조건 생성하기
-create table emp02(     --제약조건은 한칸띄어서 중복으로 사용 가능하다.
+
+drop table emp04;
+
+create table emp04(     --제약조건은 한칸띄어서 중복으로 사용 가능하다.
                          --제약조건 수기생성가능 constraint+제약조건명
                                     empno number(4) constraint emp04_empno_pk primary key, --not null + unique, --반드시 null이 아닌 데이터가 들어와야 한다. null이면 정보 가치가 없다.
                                     ename varchar2(10) constraint emp04_ename_nn not null,
                                     job varchar2(9),
                                     deptno number(2)
                                     );
+delete from emp04;
+
+select * from emp04;                            
+                                    
+insert into emp04
+values(1111,'홍길동','MANAGER',30);   
+
+insert into emp04
+values(2222,'홍길동','MANAGER',30);   
+
+insert into emp04
+values(1111,'이순신','MANAGER',20);
+
+insert into emp04
+values(null,'김유신','SALESMAN',20);
+
+insert into emp04
+values(2222,'옥동자','SALESMAN',10);
+                                    
+insert into emp04
+values(null,null,'MANAGER',30);
+
+select * from emp04;                                   
+                                    
                                     
                                     
