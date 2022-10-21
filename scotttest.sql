@@ -105,13 +105,41 @@ on e.sal between s.losal and s.hisal
 on e.mgr = m.empno
 order by d.deptno,e.empno;
 
+--Q12-1  324p
 
+create table EMP_HW(  -- 사번,이름,직책,관리자,입사일,급일,성과급,부서번호
+            empno number(4),
+            ename varchar2(10), --byte크기
+            job varchar2(9),
+            mgr number(4),
+            hiredate date, --날짜는 수기 데이터 지정하지 않고 타입만 지정하면 된다.
+            sal number(7),
+            comm number(7),
+            deptno number(2)
+);
 
+--Q12-2
+alter table EMP_HW
+add BIGO varchar2(20);
 
+--Q12-3
+alter table EMP_HW
+modify  BIGO varchar2(30);
 
+desc EMP_HW;
 
+--Q12-4
+alter table EMP_HW
+rename column BIGO to REMARK;
 
+--Q12-5
+insert into EMP_HW
+select empno,ename,job,mgr,hiredate,sal,comm,deptno,NULL  --묵시적 데이터 삽입
+from emp;
 
+select *
+from EMP_HW;
 
-
+--Q12-6
+drop table EMP_HW;
 
