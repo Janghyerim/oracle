@@ -143,3 +143,62 @@ from EMP_HW;
 --Q12-6
 drop table EMP_HW;
 
+
+
+--Q14-1 394p
+
+drop table dept_const;
+
+create table dept_const(
+                                            deptno number(2),
+                                            dname varchar2(14),
+                                            loc varchar2(13)
+                                            );
+                                            
+alter table dept_const
+add constraint deptconst_deptno_pk primary key(deptno);  
+
+alter table dept_const
+add constraint deptconst_dname_uk unique(dname);   
+
+alter table dept_const
+modify loc constraint deptconst_loc_nn not null;
+                                            
+--Q14-2 394p                                        
+drop table emp_const;                                         
+                                            
+create table emp_const(                         
+                                            empno number(4),
+                                            ename varchar2(10),
+                                            job varchar2(9),
+                                            tel varchar2(20),
+                                            hiredate date,
+                                            sal number(7,2),
+                                            comm number(7,2),
+                                            deptno number (2)
+                                            );
+
+alter table emp_const
+add constraint empconst_empno_pk primary key(empno);  
+
+alter table emp_const
+modify ename constraint empconst_ename_nn not null;
+
+alter table emp_const
+add constraint empconst_tel_unq unique (tel);
+
+alter table emp_const
+add constraint empconst_sal_chk check(sal between 1000 and 9999);
+
+alter table emp_const
+add constraint empconst_deptno_fk foreign key(deptno) references dept_const(deptno);                                         
+                                            
+
+                              
+                                            
+                                            
+                                            
+                                            
+                                            
+                              
+
