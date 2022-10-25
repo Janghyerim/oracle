@@ -272,7 +272,7 @@ add constraint emp_copy_deptno_fk foreign key(deptno) references dept(deptno);
 
 select * from emp_copy; --14행
 
-create or replace view emp_view30
+create or replace view emp_view30  --뷰에 셀렉된 컬럼만 조회가 가능하다, 카피는 전부 조회
 as
 select empno,ename,sal,deptno from emp_copy
 where deptno = 30;
@@ -329,17 +329,151 @@ group by d.dname;
 select *
 from sal_view;
 
+drop view sal_view;
+
+--모든 객체의 이름은 중복될 수 없다.
+create or replace view sal_view
+as
+select dname,min(sal) min_sal ,max(sal) max_sal,round(avg(sal),0) as avg_sal
+from emp e inner join dept d
+on e.deptno = d.deptno
+group by d.dname;
 
 
+--with check option
+create or replace view view_chk30
+as
+select empno,ename,sal,comm,deptno
+from emp_copy
+where deptno = 30 with check option; --option 의 역할 : 조건절의 컬럼을 수정하지 못하게 한다 
+
+update view_chk30  --뷰의 WITH CHECK OPTION의 조건에 위배 됩니다
+set  deptno = 10;
 
 
+--with read only
+create or replace view view_read30
+as
+select empno,ename,sal,comm,deptno
+from emp_copy
+where deptno = 30 with read only;   --모든 컬럼에 대한 C U D 가 불가능(조회만 가능하다)
+
+update view_read30  --읽기 전용 뷰에서는 DML 작업을 수행할 수 없습니다. (insert,update,delete)
+set  deptno = 10;
+
+--뷰의 활용
+--TOP - N 조회하기
+--ROWNUM 낮은 순부터 조회
+select * from emp;
+
+--입사일이 가장 빠른 5명의 사원조회
+select * from emp
+order by hiredate asc;
+
+select * from emp
+where hiredate <= '81/05/01' ;   
+
+DESC emp;
+
+--뷰의 활용 예시 1)                       
+select rownum,empno,ename,hiredate
+from emp
+where rownum <= 5;
+
+select rownum,empno,ename,hiredate
+from emp
+order by hiredate asc;  --rownum이 순서대로 정렬되지 않는다.
+
+--뷰의 활용 예시 2)
+create or replace view view_hiredate
+as
+select empno,ename,hiredate
+from emp
+order by hiredate asc;
+
+select * from view_hiredate;
+
+--2)의 rownum 2~4만 출력하기
+select rownum,empno,ename,hiredate
+from view_hiredate  --rownum도 순서정렬되고 입사일도 순서정렬된다.
+where rownum between 2 and 5;  --출력 실패 : rownum을 조건절에 직접 사용시 반드시 1을 포함하는 조건식을 만들어야 한다.
+
+create or replace view view_hiredate_rm
+as
+select rownum rm ,empno,ename,hiredate  --rownum rm 별칭을 만들어 다시 테이블 생성한다
+from view_hiredate;
+
+select rm,empno,ename,hiredate
+from view_hiredate_rm;
+
+select rm,empno,ename,hiredate
+from view_hiredate_rm
+where rm >= 2 and rm <= 4;
+
+--인라인 뷰 활용 예시
+select rm, b.*
+from  ( 
+            select rownum rm, a.*
+            from (select empno,ename,hiredate
+                       from emp
+                       order by hiredate asc
+                       )a
+           )b           
+where rm >= 2 and rm <= 4;
 
 
+--인라인 뷰로 입사일이 가장빠른 사원5명 추출하기
+ select rownum,empno,ename,hiredate
+            from( 
+                       select empno,ename,hiredate
+                       from emp
+                       order by hiredate asc
+                     )a
+where rownum <= 5 ;                                   
 
+--시퀀스(sequence)
+--자동으로 번호를 증가시키는 기능 수행
+--create , drop
+--nextval , currval
 
+--create sequence 시퀀스명
+--start with 시작값 => 1(기본값)
+--increment by 증가치 =>1
+--maxvalue 최댓값 => 10의 1027
+--minvalue 최솟값  => 10의 -1027
 
+drop sequence dept_deptno_seq;
 
+create sequence dept_deptno_seq
+increment by 10
+start with 10;
 
+select dept_deptno_seq.nextval--데이터 증가 용도
+from dual;
+
+select dept_deptno_seq.currval --현재 데이터 확인 용도 =>거의 쓸 일 없음
+from dual;
+
+--=========================
+drop sequence emp_seq;
+
+create sequence emp_seq
+increment by 1
+start with 1
+maxvalue 1000;
+
+drop table emp01;
+
+create table emp01
+as
+select empno,ename,hiredate from emp
+where 1 != 1;
+
+select * from emp01;
+
+insert into emp01
+values(emp_seq.nextval,'hong',sysdate);  --empno = 2가 출력되는데 이는 오라클 버그이고 해결책은 따로 없다.
+--반복하여 출력하면 empno만 자동 증가된다.
 
 
 
