@@ -477,12 +477,24 @@ values(emp_seq.nextval,'hong',sysdate);  --empno = 2가 출력되는데 이는 오라클 버
 
 
 
+drop table  product;
 
+create table product(
+                                        pid varchar2(10),
+                                        pname varchar2(10),
+                                        price number(5),
+                                        
+                                        constraint product_pid_pk primary key(pid)
+                                     );
+create sequence idx_product_id
+start with 1000;
 
+insert into product
+values('pid'|| idx_product_id.nextval,'치즈',1000);
 
+select * from product;
 
-
-
+drop sequence idx_product_id;
 
 
 
