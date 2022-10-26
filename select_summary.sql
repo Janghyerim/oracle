@@ -416,12 +416,12 @@ select ename,job,deptno,
 from emp;
 
 --case : 범위를 조건으로 설정할 수 있다.
-case
-            when 조건식 then 실행문
-            when 조건식 then 실행문
-            when 조건식 then 실행문
-            else 실행문
-end as 별칭
+--case
+--            when 조건식 then 실행문
+--            when 조건식 then 실행문
+--            when 조건식 then 실행문
+--            else 실행문
+--end as 별칭
 
 select ename,job,deptno,
 case
@@ -576,9 +576,9 @@ group by deptno,job
 having avg(sal) >=2000
 order by deptno, job;
 
-=======
- where mod(empno,2) = 1;
->>>>>>> 1fa4dde7c683476d8b39d02b701f00b45d3b3a9a
+--========================================
+-- where mod(empno,2) = 1;
+-->>>>>>> 1fa4dde7c683476d8b39d02b701f00b45d3b3a9a
 
 -- sql developer
 
@@ -1506,7 +1506,9 @@ select empno,ename,hiredate
 from emp
 order by hiredate asc;
 
-select * from view_hiredate;
+select rownum,empno,ename,hiredate 
+from view_hiredate
+where rownum <= 7;
 
 --2)의 rownum 2~4만 출력하기
 select rownum,empno,ename,hiredate
@@ -1529,7 +1531,8 @@ where rm >= 2 and rm <= 4;
 select rm, b.*
 from  ( 
             select rownum rm, a.*
-            from (select empno,ename,hiredate
+            from (
+                       select empno,ename,hiredate
                        from emp
                        order by hiredate asc
                        )a
@@ -1605,13 +1608,507 @@ create sequence idx_product_id
 start with 1000;
 
 insert into product
-values('pid'|| idx_product_id.nextval,'치즈',1000);
+values('pid'|| idx_product_id.nextval,'치즈',1000); -- || 연결해주는 연산자
 
 select * from product;
 
 drop sequence idx_product_id;
 
 --p392 end
+
+--PL/SQL기초 p419
+--PL/SQL(확장되어진 SQL언어)
+--변수,조건문,반복문 을 추가로 사용해서 SQL을 유연하고 풍성하게 사용할 수 있음.
+
+--기본적인 PL/SQL 구문
+-- declare 
+--     변수를 정의
+-- begin -> 필수구문!!
+--     SQL구문 작성
+--     출력구문 작성  --> 쿼리문의 수행결과를 반드시 출력함수를 통해서 확인해야 한다.
+-- exception
+--     예외 처리 구문
+-- end; -> 필수구문!!
+-- /  --슬래쉬는 무조건 마지막에 필수로 넣어줘야 한다.
+
+--데이터조회===============================================================
+
+--PL/SQL 초기세팅
+
+set serveroutput on;  --기본적으로 초기 세팅 해놓는다.
+
+begin
+          dbms_output.put_line('Hello World'); --출력함수 (자바의 sysout구문과 같음.)
+end;
+/
+--=======================================================================
+--기본적인 PL/SQL 구문 변수 활용과 선언 및 초기화 
+
+declare
+--            vempno number(4);  --변수의 선언
+--            vename varchar2(10);
+
+                vempno constant number(4) := 7777;      --변수의 선언과 초기화 동시에 하는 방식    /constant를 쓰면 상수로 변환된다.
+                vename varchar2(10) not null  := 'SCOTT';  --not null을 붙이면 null값을 변수의 값으로 사용할 수 없다.
+begin
+--            vempno := 7777;       --변수의 초기화 / := 콜론는 은 같이 붙여서 사용해야 한다.
+--            vename := 'SCOTT';
+            
+            dbms_output.put_line('사원 / 이름');
+            dbms_output.put_line(vempno || ' ' || vename);
+end;
+/
+--========================================================================
+--디클레어 2가지 방식
+
+declare 
+            --스칼라 방식
+            --vempno number(4);
+            --레퍼런스 방식 (더 많이 쓰임)
+            vempno emp.empno%type := 7777 ;  --기존 테이블의 컬럼의 타입을 참조한다. / % : 참조하다 
+ begin 
+            --vempno := 7777;
+            dbms_output.put_line(vempno);
+ end; 
+ /
+--=========================================================================
+--레퍼런스 방식 활용 / 제약이 크나 PL/SQL 구문이 주는 장점이 있음.
+
+declare 
+            --레퍼런스 방식 (더 많이 쓰임)
+            vempno emp.empno%type;  
+            vename emp.ename%type;
+begin            --try 영역   
+
+           select empno,ename 
+           into vempno,vename  --empno,ename 을 vempno,vename에 넣어준다.
+           from emp;
+           --where empno = 7788; --필수
+           --select구문을 PL/SQL 구문에 쓸때는 into 절과 where절이 필수로 반드시 들어와야 한다.
+           
+           dbms_output.put_line('사번 / 이름');
+           dbms_output.put_line(vempno || ' ' || vename);
+           
+exception      --catch 영역       --where절이 없을 경우,  / when-then 구문을 쓴다.
+           
+           when TOO_MANY_ROWS then dbms_output.put_line('행의 수가 여러 개 입니다.');
+           when OTHERS then dbms_output.put_line('모든 예외에 대한 처리');
+end; 
+ /
+--=========================================================================
+--emp 테이블에 있는 사원의 이름과 직업 추출하기
+
+declare
+            --테이블 type (사용자 정의 변수 타입 )
+            --배열의 형식과 같다
+            --vename varchar2(10)
+            
+            TYPE empno_table_type IS TABLE OF emp.empno%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE ename_table_type IS TABLE OF emp.ename%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE job_table_type IS TABLE OF emp.job%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE mgr_table_type IS TABLE OF emp.mgr%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE hiredate_table_type IS TABLE OF emp.hiredate%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE sal_table_type IS TABLE OF emp.sal%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE comm_table_type IS TABLE OF emp.comm%type
+            INDEX BY BINARY_INTEGER;
+            
+            TYPE deptno_table_type IS TABLE OF emp.deptno%type
+            INDEX BY BINARY_INTEGER;
+            
+            empnoArr empno_table_type;
+            enameArr ename_table_type;  --배열 형식의 변수 선언
+            jobArr job_table_type;              --배열 형식의 변수 선언
+            mgrArr mgr_table_type;
+            hiredateArr hiredate_table_type;
+            salArr sal_table_type;
+            commArr comm_table_type;
+            deptnoArr deptno_table_type;
+            
+            
+            i BINARY_INTEGER := 0;  --변수 i 선언
+
+begin  --반복문 사용
+            for k in (select * from emp) loop
+                        i := i + 1;  --index번호는 자바 0번 시작과 달리 1번부터 사용된다.
+                        empnoArr(i) := k.empno;
+                        enameArr(i) := k.ename;  --select구문에서 조회된 k.ename , k.job
+                        jobArr(i) := k.job;
+                        mgrArr(i) := k.mgr;
+                        hiredateArr(i) := k.hiredate;
+                        salArr(i) := k.sal;
+                        commArr(i) := k.comm;
+                        deptnoArr(i) := k.deptno;
+                        
+            end loop;
+            
+            for j in 1..i loop 
+                        dbms_output.put_line(empnoArr(j) || ' / ' || enameArr(j) || ' / ' || jobArr(j) || ' / ' || mgrArr(j) || ' / ' || hiredateArr(j) || ' / ' || salArr(j) || ' / ' || commArr(j) || ' / ' || deptnoArr(j));
+            end loop;
+
+end;
+/
+--==========================================================================
+declare
+            
+            --테이블 type (사용자 정의 변수 타입 )
+            --배열의 형식과 같다
+            --vename varchar2(10)
+            
+             TYPE emp_record_type IS RECORD(
+                        v_empno emp.empno%type,
+                        v_ename emp.ename%type,
+                        v_job emp.job%type,
+                        v_deptno emp.deptno%type               
+             );
+             
+             emp_record emp_record_type; --레코드 타입의 변수 선언;
+begin
+            --레코드 type(여러개의 변수를 묶어서 사용한다) => 사용자 정의 변수 타입
+            --클래스랑 유사하다.
+            select empno,ename,job,deptno
+            into emp_record
+            from emp
+            where empno = 7788;
+            
+            dbms_output.put_line(emp_record.v_empno || ' ' || emp_record.v_ename || ' ' || emp_record.v_job || ' ' || emp_record.v_deptno);
+            
+end;
+/
+--============================================================================
+
+
+
+--데이터 생성 및 삽입=============================================================
+create table dept_record
+as
+select * from dept;
+
+declare
+            TYPE rec_dept IS RECORD(
+                    v_deptno dept_record.deptno%type,
+                    v_dname dept_record.dname%type,
+                    v_loc dept_record.loc%type
+            );
+            
+            dept_rec rec_dept;  --변수와 테이블명이 같으면 오류남.
+begin
+            dept_rec.v_deptno := 50;
+            dept_rec.v_dname := 'DEV';
+            dept_rec.v_loc := 'BUSAN';
+            
+            insert into dept_record
+            values dept_rec;  --values에 (괄호)는 레코드문에서는 안써야 한다.
+end;
+/
+select * from dept_record;
+
+
+--내가 만든 테이블 정보 업데이트구문====================================================
+
+declare
+            TYPE rec_dept IS RECORD(
+                    v_deptno dept_record.deptno%type not null  := 99,
+                    v_dname dept_record.dname%type,
+                    v_loc dept_record.loc%type
+            );
+            
+            dept_rec rec_dept;
+         
+begin
+            dept_rec.v_deptno := 50;
+            dept_rec.v_dname := 'INSA';
+            dept_rec.v_loc := 'SEOUL';
+            
+            update dept_record
+              -- 바꾸고 싶은 컬럼명 = 50,'SEOUL'
+            set dname = dept_rec.v_dname , loc = dept_rec.v_loc
+            where deptno = dept_rec.v_deptno;
+            
+end;
+/
+select * from dept_record;
+
+--테이블 삭제===========================================================================
+declare
+           v_deptno dept_record.deptno%type := 50;
+begin
+          delete from dept_record
+          where deptno = v_deptno;     
+end;
+/
+
+--조건문===============================================================================
+
+declare 
+            vempno number(4);
+            vename varchar2(10);
+            vdeptno varchar2(10);
+            vdname varchar2(10) := null ;
+
+begin
+            select empno,ename,deptno
+            into vempno,vename,vdeptno
+            from emp
+            where empno = 7788;
+            --oracle에서의 if문 특성
+--            if( 조건식 ) then     
+--                        실행문
+--            end if ;
+             if( vdeptno = 10 ) then    
+                         vdname := 'AAA';
+            end if ;
+            
+            if( vdeptno = 20 ) then     
+                         vdname := 'BBB';
+            end if ;
+            
+            if( vdeptno = 30 ) then     
+                         vdname := 'CCC';
+            end if ;
+            
+            if( vdeptno= 40 ) then    
+                         vdname := 'DDD';
+            end if ;
+            
+            dbms_output.put_line('부서명 : ' || vdname);
+
+end;
+/
+--%ROWTYPE===========================================================================
+
+declare
+            --%ROWTYPE : 테이블의 모든 컬럼의 이름과 변수를 참조하겠다.
+            --컬럼명이 변수명으로 사용되고 컬럼의 타입을 변수의 타입으로 사용한다.
+            
+            vemp emp%rowtype;         --emp테이블의 8개의 컬럼이 변수로 사용되는 것 
+            
+begin
+            select *
+            into vemp  --%rowtype으로 정의된 타입
+            from emp
+            where empno = 7788;
+            
+            dbms_output.put_line(vemp.empno);  --empno : 7788을 가진 사번 정보 조회
+            dbms_output.put_line(vemp.ename); 
+            dbms_output.put_line(vemp.job);
+            dbms_output.put_line(vemp.mgr);
+            dbms_output.put_line(vemp.hiredate);
+            dbms_output.put_line(vemp.sal);
+            dbms_output.put_line(vemp.comm);  --null데이터는 공백으로 출력된다. / null로 출력되는건 툴의 기능마다 다름.
+            dbms_output.put_line(vemp.deptno);
+            
+end;
+/
+
+--======================================================================================
+--정리 
+
+--스칼라 방식
+--레퍼런스 방식
+--    1. emp.empno%type
+--    2. emp%rowtype
+
+--사용자 정의 변수 타입
+--    1. 테이블 type
+--                   -TYPE empno_table_type IS TABLE OF emp.empno%type
+--                   -INDEX BY BINARY_INTEGER;
+--    2. 레코드 type
+--                   -TYPE rec_dept IS RECORD(
+--                   -v_deptno dept_record.deptno%type not null  := 99,
+--                   -v_dname dept_record.dname%type,
+--                   -v_loc dept_record.loc%type
+--                   - );
+
+--=======================================================================================
+
+--문제 1-1 if-then / end if 문
+
+declare
+            --%ROWTYPE : 테이블의 모든 컬럼의 이름과 변수를 참조하겠다.
+            --컬럼명이 변수명으로 사용되고 컬럼의 타입을 변수의 타입으로 사용한다.
+            vemp emp%rowtype;
+            annsal number(7,2);
+
+begin 
+            dbms_output.put_line('사번 / 이름 / 연봉');
+            dbms_output.put_line('------------- ');
+            
+            select *
+            into vemp 
+            from emp
+            where empno = 7788;
+            
+            --Q1.
+            --해당 사원의 연봉을 출력하라. 단, 커미션이 null인 경우 0으로 출력하라.
+            --계산된 연봉을 변수 annsal에 넣어서 출력하라.
+            
+             if( vemp.comm is null ) then     
+                         vemp.comm := 0;
+            end if ;
+            
+            annsal := vemp.sal*12 + vemp.comm;
+          
+            dbms_output.put_line('사번 : ' || vemp.empno ||' '|| '이름 : ' ||vemp.ename ||' '||'연봉 : ' || annsal ||'만원');     
+end;
+/
+--==========================================================================================
+
+--문제 1-2  if-then / else if 문  
+declare
+            --%ROWTYPE : 테이블의 모든 컬럼의 이름과 변수를 참조하겠다.
+            --컬럼명이 변수명으로 사용되고 컬럼의 타입을 변수의 타입으로 사용한다.
+            vemp emp%rowtype;
+            annsal number(7,2);
+
+begin 
+            dbms_output.put_line('사번 / 이름 / 연봉');
+            dbms_output.put_line('------------- ');
+            
+            select *
+            into vemp 
+            from emp
+            where empno = 7788;
+            
+             if( vemp.comm is null ) then     
+                        annsal := vemp.sal*12;
+            else
+                        annsal := vemp.sal * 12 + vemp.comm;
+            end if ;
+          
+            dbms_output.put_line('사번 : ' || vemp.empno ||' '|| '이름 : ' ||vemp.ename ||' '||'연봉 : ' || annsal ||'만원');     
+end;
+/
+--다중 if문 ===================================================================================
+
+declare
+            vemp emp %rowtype;
+            vdname varchar2(10);
+begin
+            select *
+            into vemp
+            from emp
+            where empno = 7788;
+            
+            if(vemp.deptno = 10) then
+                    vdname := 'AAA';
+            elsif (vemp.deptno = 20) then  --elsif =else if 의 오라클 특성
+                    vdname := 'BBB';
+            elsif (vemp.deptno = 30) then  
+                    vdname := 'CCC';
+            elsif (vemp.deptno = 40) then  
+                    vdname := 'DDD';
+            end if;
+            
+            dbms_output.put_line(vdname);        
+end;
+/
+--==========================================================================================
+
+--[조건문]
+--if then end if;
+--if then else end if;
+--if then elsif then end if;
+
+
+--[반복문]
+--loop end loop;
+--for in loop end loop;  --증가
+--for in reverse loop end loop; --감소
+--while loop end loop;
+
+--==========================================================================================
+
+--반복문=====================================================================================
+--loop (활용 빈도가 낮음)
+--        실행문( 무한 반복문 )
+--        무한 반복문의 제어
+--        1. EXIT WHEN 조건식;
+--        2. IF THEN END IF;
+--end loop;
+
+declare
+            n number := 1;
+begin
+            loop 
+                    dbms_output.put_line(n);
+                    n := n +1;  --따로 증감연산자는 존재하지 않으므로 직접 더해줘야 한다.
+                    exit when n > 10;  --반복문을 멈추기 위한 조건
+            end loop;
+end;
+/
+
+--for (활용 빈도가 높음)
+declare
+            --변수 선언 딱히 필요 없음
+begin
+            --in 구문 뒤에 작성되는 값이 반복의 횟수를 결정한다.
+            --in : 증가
+            for n in 1..10 loop  --in 뒤에있는 값은 시작값..끝값 1씩 증가  / 1~10까지 10회 반복하는 것.
+            dbms_output.put_line(n);
+            end loop;
+end;
+/
+
+declare
+            --변수 선언 딱히 필요 없음
+begin
+            --in 구문 뒤에 작성되는 값이 반복의 횟수를 결정한다.
+            --in reverse : 감소
+            for n in reverse 1..10 loop  --in 뒤에있는 값은 시작값..끝값 1씩 감소  / 1~10까지 10회 반복하는 것.
+            dbms_output.put_line(n);
+            end loop;
+end;
+/
+
+
+declare
+            vdept dept %rowtype;
+begin
+            for n in 1..4 loop
+                    select *
+                    into vdept
+                    from dept
+                    where deptno = 10 * n ;  --where절이 없으면 오류로 판단한다.
+            dbms_output.put_line(vdept.deptno || '/ ' || vdept.dname || '/ ' || vdept.loc);
+            
+            end loop;
+end;
+/
+
+--while (활용 빈도)
+--declare
+--            n number := 1;
+--begin
+--            while (조건식) loop
+--            
+--            end loop;
+--end;
+--/
+
+declare
+            n number := 1;
+begin
+            while (n <= 10) loop
+            dbms_output.put_line(n);
+            n := n + 1;
+            end loop;
+end;
+/
+
+
+
 
 
 
