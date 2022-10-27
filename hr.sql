@@ -8,3 +8,6 @@ from employees e inner join departments d
 on e.department_id = d.department_id;
 
 select count(*) from employees;  --107¸í Ãâ·Â
+
+select * from employees
+where department_id is null;
