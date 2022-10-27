@@ -1681,7 +1681,7 @@ declare
 begin            --try 영역   
 
            select empno,ename 
-           into vempno,vename  --empno,ename 을 vempno,vename에 넣어준다.
+           into vempno,vename  --필수  / empno,ename 을 vempno,vename에 넣어준다.
            from emp;
            --where empno = 7788; --필수
            --select구문을 PL/SQL 구문에 쓸때는 into 절과 where절이 필수로 반드시 들어와야 한다.
@@ -1704,7 +1704,7 @@ declare
             --vename varchar2(10)
             
             TYPE empno_table_type IS TABLE OF emp.empno%type
-            INDEX BY BINARY_INTEGER;
+            INDEX BY BINARY_INTEGER;  --인덱스 사용시 바이너리 인티저 타입을 쓰겠다는 뜻
             
             TYPE ename_table_type IS TABLE OF emp.ename%type
             INDEX BY BINARY_INTEGER;
@@ -2107,6 +2107,259 @@ begin
 end;
 /
 
+--==========================================================================================
+--저장 프로시저
+--1. 생성(create)
+--2. 사용(execute  or  exec)
+
+--set  serveroutput on;
+--
+--create or replace procedure 프로시저명(필수)(매개변수)
+--
+--is or as --declare 자리
+--            변수를 정의
+--begin
+--            SQL문 작성
+--            출력구문 작성
+--            조건문, 반복문
+--end;
+--/
+
+--생성부분
+drop table emp01;
+
+create table emp01
+as
+select * from emp;
+
+create or replace procedure emp01_print --프로시저명 필수
+is 
+vempno number(10);
+vename varchar2(10);
+begin
+vempno := 1111;
+vename := 'Hong';
+
+dbms_output.put_line(vempno || ' ' || vename);
+end;                                  --Procedure EMP01_PRINT이(가) 컴파일되었습니다.
+/
+
+--사용(실행)부분
+
+exec emp01_print;                   
+
+execute emp01_print;          
+
+--삭제 부분
+create or replace procedure emp01_del
+is
+begin
+            delete from emp01;
+end;
+/
+
+exec emp01_del;
+
+select * from emp01;
+
+--==========================================================================================
+
+--*******중요 시험에도 출제 관련------------------------------------
+                                                                                --레퍼런스 타입 사용
+create or replace procedure del_ename(vename emp01.ename%type)--타입은 스칼라나 레퍼런스 중 편한 것으로 쓰면됨.
+is
+
+begin
+
+delete from emp01  --emp01테이블의 정보를 삭제함
+where ename = vename;
+
+end;
+/
+
+exec del_ename('SCOTT');
+
+exec del_ename('SMITH');
+
+select * from emp01;
+
+--==========================================================================================
+
+--저장 프로시저의 매개변수 유형
+-- in, out, in out
+-- in : 값을 전달받는 용도  (기본값이므로 따로 표기 하지 않았으면 in이 생략되어 있는 것이다.)
+-- out : 프로시저 내부의 실행 결과를 실행을 요청한 쪽으로 전달
+-- in out : in + out 의 기능이 동시에 들어간 용도
+
+create or replace procedure sel_empno
+(
+            vempno in emp.empno%type, 
+            vename out emp.ename%type,
+            vsal out emp.sal%type, 
+            vjob out emp.job%type
+ )
+is
+
+begin
+            select ename,sal,job
+            into vename,vsal,vjob--out타입의 변수를 into 절에 써준다
+            from emp
+            where empno = vempno;
+end;
+/
+
+--바인드 변수 문자열 타입 선언
+variable var_ename varchar2(15); 
+variable var_sal number;
+variable var_job varchar2(9);
+
+--바인드 변수(out타입)라고 칭한다.
+--in타입은 안에 써주고 out타입은 변수로 지정해준다.
+--바인드 변수 사용시 앞에 : 콜론을 붙여주고 네임을 쓴다. (강제적인 문법)
+exec sel_empno(7499,:var_ename,:var_sal,:var_job);
+
+--out타입의 변수를 프린트하여 출력하면 in 타입의 7499 사원의 정보가 추출된다.
+print var_ename;  
+print var_sal;
+print var_job;
+
+
+--문제--
+
+
+--사원 정보를 저장하는 저장 프로시저를 만드세요.
+--사번,이름,직책,매니저,부서
+--사원 정보는 **매개변수**를 사용해서 받아온다.
+create table emp02
+as
+select empno,ename,job,mgr,deptno
+from emp
+where 1 != 1;   --물어보기
+
+create or replace procedure insert_sawon --프로시저명 필수
+(
+            vempno in emp02.empno%type, 
+            vename in emp02.ename%type,
+            vjob in emp02.job%type,   
+            vmgr in emp02.mgr%type,
+            vdeptno in emp02.deptno%type
+)
+is 
+begin
+            insert into emp02
+            values(vempno,vename,vjob,vmgr,vdeptno);
+
+--            select ename,job,mgr,deptno
+--            into vename, vjob, vmgr, vdeptno
+--            from emp
+--            where empno = vempno;
+
+end;                              
+/
+
+exec insert_sawon(1111,'hong','sales',2222,10);
+
+select * from emp02;
+
+drop procedure insert_sawon;
+
+--variable var_ename varchar2(15); 
+--variable var_job varchar2(9);
+--variable var_mgr varchar2(10);
+--variable var_deptno number;
+--
+--exec insert_sawon(7499,:var_ename,:var_job,:var_mgr,:var_deptno);
+--
+--print var_ename;  
+--print var_job;
+--print var_mgr;
+--print var_deptno;
+
+--==========================================================================================
+--저장 함수
+--저장함수와 저장 프로시저의 차이점 : return 값 유무
+--1. 생성(create)
+--2. 사용(실행)(execute)
+
+--create or replace function 함수명(매개변수)
+--            RETURN 값의 타입  --세미콜론 생략
+--is
+--            변수 정의
+--begin
+--            SQL 구문
+--            출력함수
+--            조건문,반복문
+--
+--            RETURN 리턴값;  --세미콜론 사용
+--end;
+--/
+
+create or replace function cal_bonus(vempno emp.empno%type)
+            return number 
+is
+           vsal number(7,2);
+begin
+            select sal
+            into vsal
+            from emp
+            where empno = vempno;
+
+            return vsal * 200 ;
+end;
+/
+
+variable var_res number;
+
+ --exec 뒤쪽에 바인드 변수를 선언해야 한다.
+exec :var_res := cal_bonus(7788);  
+
+print var_res;
+
+drop function cal_bonus;
+
+--==========================================================================================
+--커서 : select 구문이 실행하는 결과를 가리킨다.
+
+--declare
+--            CURSOR 커서명 IS sql구문(select 구문);  --커서를 선언
+--begin
+--            OPEN 커서명;
+--            LOOP
+--                      FETCH 커서명 INTO 변수명 ;  --테이블로부터 가져와서 변수에 저장하는 역할 (한번에 레코드 하나씩만 가져올 수 있음.)
+--                      exit when 커서명%NOTFOUND;  --커서명%NOTFOUND : 레코드를 찾지 못했다면 루프를 나가라
+--            END LOOP;
+--            CLOSE 커서명;
+--end;
+--/
+
+declare
+            cursor c1 is select * from emp;  --커서 선언
+            vemp emp%rowtype;  --변수 선언
+begin
+            open c1;
+            loop
+                      fetch c1 into vemp ;  --테이블로부터 가져와서 변수에 저장하는 역할 (한번에 레코드 하나씩만 가져올 수 있음.)
+                      exit when c1%NOTFOUND;  --커서명%NOTFOUND : 레코드를 찾지 못했다면 루프를 나가라
+                      dbms_output.put_line(vemp.empno || ' ' || vemp.ename || ' ' || vemp.job || ' ' || vemp.mgr || ' ' || vemp.hiredate  || ' ' || vemp.sal || ' ' || vemp.comm || ' ' || vemp.deptno);
+            end loop;
+            close c1;
+end;
+/
+--==========================================================================================
+--for문(반복문)을 이용한 커서문
+
+declare
+            cursor c1 is select * from dept; 
+            vdept dept%rowtype; 
+begin
+           for vdept in c1 loop
+                        exit when c1%notfound;
+                        dbms_output.put_line(vdept.deptno || ' ' || vdept.dname || ' ' || vdept.loc);
+           end loop;
+end;
+/
+
+--==========================================================================================
 
 
 
